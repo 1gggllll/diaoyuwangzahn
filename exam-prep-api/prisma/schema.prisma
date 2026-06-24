@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  learningIndexes LearningIndex[]
+  progress        Progress[]
+  studyRecords    StudyRecord[]
+}
+
+model LearningIndex {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalText           String
+  currentLevel       String
+  targetHoursPerWeek Int      @default(10)
+  status             String   @default("DRAFT")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  knowledgeNodes KnowledgeNode[]
+  quizQuestions  QuizQuestion[]
+  progress       Progress[]
+  studyRecord    StudyRecord?
+
+  @@index([userId])
+}
+
+model KnowledgeNode {
+  id               String        @id @default(cuid())
+  indexId          String
+  index            LearningIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  difficulty       String        @default("MEDIUM")
+  estimatedMinutes Int           @default(60)
+  sortOrder        Int           @default(0)
+  parentId         String?
+  createdAt        DateTime      @default(now())
+
+  @@index([indexId])
+}
+
+model QuizQuestion {
+  id            String        @id @default(cuid())
+  indexId       String
+  index         LearningIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  nodeId        String?
+  question      String
+  options       Json
+  correctAnswer String
+  explanation   String?
+  createdAt     DateTime      @default(now())
+
+  @@index([indexId])
+}
+
+model Progress {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  indexId     String
+  index       LearningIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  moduleKey   String
+  status      String        @default("NOT_STARTED")
+  score       Float?
+  completedAt DateTime?
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([userId, indexId, moduleKey])
+  @@index([userId, indexId])
+}
+
+model StudyRecord {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  indexId     String        @unique
+  index       LearningIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  summaryJson Json?
+  evaluatedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+}

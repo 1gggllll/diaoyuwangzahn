@@ -1,0 +1,5 @@
+config.local.php
+.tools/
+.vscode/
+lan-url.txt
+*.zip
